@@ -1,0 +1,294 @@
+\newcommand{\AuthorCopyrightYear}{2025}
+\newcommand{\AuthorCopyrightName}{Freiling \textit{et al.}}
+
+\documentclass{scp}
+\printSubmissionType
+
+\usepackage{ae}
+\usepackage{graphicx}
+\usepackage{subfigure}
+%\usepackage{fancyvrb} %Textboxes
+% settings for page margins
+\usepackage{geometry}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{tikz}
+\usepackage{amsmath}
+
+
+\definecolor{uzlozeanblue}{RGB}{0,75,90}
+\definecolor{uzlextrablue}{RGB}{0,131,173}
+\definecolor{extragreen}{RGB}{0,166,79}
+
+\definecolor{uzllightblue}{RGB}{0,174,199}
+\definecolor{uzlblue}{RGB}{0,145,168}
+\definecolor{uzldarkblue}{RGB}{0,97,122}
+
+\definecolor{uzllightgreen}{RGB}{59,178,160}
+\definecolor{uzlgreen}{RGB}{36,143,133}
+\definecolor{uzldarkgreen}{RGB}{0,90,91}
+
+\definecolor{uzllightorange}{RGB}{236,116,4}
+\definecolor{uzlorange}{RGB}{203,81,25}
+\definecolor{uzldarkorange}{RGB}{129,53,19}
+
+\definecolor{uzllightred}{RGB}{228,32,50}
+\definecolor{uzlred}{RGB}{181,22,33}
+\definecolor{uzldarkred}{RGB}{127,21,24}
+
+\definecolor{uzllightyellow}{RGB}{250,187,0}
+\definecolor{uzlyellow}{RGB}{191,134,20}
+\definecolor{uzldarkyellow}{RGB}{117,83,17}
+
+%\input{configSCP}
+
+
+\addbibresource{SCP_ref.bib}
+
+% =======================================================================
+\begin{document}
+\twocolumn[
+
+\title{Real-Time Line Segmentation for Mobile Robots in 2D Point Clouds}
+
+\author{Freiling}{Lukas}{a,\ast}{0000-0000-0000-0000}
+\author{Krimm}{Martin}{b}{}
+\author{Haase}{Matthias}{b}{}
+%\author{Schildbach}{Prof. Dr. Georg}{c}{}
+
+%\affiliation{a}{Student of Medical Engineering Science, Universität zu Lübeck, Lübeck, Germany}
+%\affiliation{b}{Student of Medical Informatics, Universität zu Lübeck, Lübeck, Germany}
+%\affiliation{c}{Student of Biomedical Engineering, Luebeck University of Applied Sciences, Lübeck, Germany}
+%\affiliation{d}{Student of Auditory Technology, Universität zu Lübeck, Lübeck, Germany}
+%\affiliation{e}{Student of Biophysics, Universität zu Lübeck, Lübeck, Germany}
+\affiliation{a}{Student of Robotics and Autonomous Systems, Universität zu Lübeck, Lübeck, Germany}
+%\affiliation{g}{Student of Psychology - Cognitive Systems, Universität zu Lübeck, Lübeck, Germany}
+%\affiliation{h}{Genius Industries, Valley of Innovation, Geniustown, Geniuscountry}
+
+\affiliation{b}{STILL GmbH, Hamburg, Germany}
+%\affiliation{c}{Institute for Electrical Engineering in Medicine, Universität zu Lübeck, Lübeck, Germany}
+
+\affiliation{\ast}{Corresponding author, \email{lukas.freiling@student.uni-luebeck.de; musterprofessor@wisdom.uni-luebeck.de} % It is mandatory to give two e-mail adresses, first one is your student e-mail adress, second is the e-mail adress of your university supervisor.
+}
+
+\maketitle
+
+\begin{abstract}
+In this paper, line segmentation algorithms are analyzed regarding their precision and runtime. Therefore three different methods, Split and Merge, RANSAC and Line Segment Extractor algorithm are presented to segment lines from point clouds. Test scenarios were created and evaluated by using the metrics structural and orthogonal distance. It could be shown that the Split and Merge algorithm was not able to correctly segment lines in every scenario. In this cases the runtime was also high, as the general prediction error. The RANSAC and Line Segment Extractor both showed to be suitable for real time application. While the RANSAC proved to be the faster algorithm, the Line Segment Extractor showed to be more precise and fine detailed. This trade-off between both methods leads to the conclusion that the best algorithm depends on the needs of the application.
+\end{abstract}
+] % end of twocolumn option
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INTRODUCTION
+\section{Introduction} 
+\thispagestyle{empty}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Perception is the main task for autonomous robots to respond to their environment. For that reason, raw sensor data gets abstracted into refined features. Line segments can help to perceive the environment better. They can describe borders or other structures in the surrounding. Therefore they are commonly used in mobile robots \cite{Zhang}. \\
+Line detection in machine and robot vision is a frequently studied problem. One popular technique is the Hough Transform. Darlitz et al. \cite{Dalitz} showed an iterative Hough Transform where lines are subsequently found. Fernandes et al. stated that "the computational cost ... prevented software implementations to achieve real-time performance" \cite{Fernandes}. For that reason, the Hough Transform was not investigated in this paper. \\
+Nguyen et al. \cite{Nguyen} compared six algorithms in mobile robot scenarios. They showed that the Incremental and the Split and Merge algorithm had the best performance, while the Split and Merge was the fastest algorithm. These algorithms were only tested with 2D LiDAR data and not with unconstrained data from a point cloud. \\
+Also presented by Nguyen et al. was the Random Sample Consensus (RANSAC). While they showed that the runtime performance was not as good as other algorithms on 2D LiDAR data, other researcher could show that the application in point cloud is in general good.\\
+Reconstruction of line segments from large 3D point clouds was studied by Xin et al. \cite{Xin}. They proposed a method using a nearest neighbor tree called Line Segment Extractor. It was shown that they could precisely estimate line segments. For their evaluation they used an high performance computer and were not restricted for real-time.   
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% METHODS
+\section{Methods} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In this section, three different line segmentation techniques are presented. To estimate line parameters from a set of points the Principal Component Analysis (PCA) is used \cite{pca}. The PCA is a statistical technique used for dimensionality reduction by transforming data into a new coordinate system where the greatest variance by any projection of the data lies along the first component. This corresponds to a regression of data points as a line.\\
+With the principal component (PC) found, only the line segment has to be determined. This can be achieved by projecting each point on the line and searching for the minimal and maximal value.
+
+\subsection*{Split and Merge} \label{sec:SNM}
+Nguyen et al. showed a Split and Merge algorithm adapted to segment lines in 2D LiDAR scans. The input data has the constraint that consecutive data points have to be angular neighbours in a scan. The Split and Merge algorithm consists, as the name suggests, of two different parts. In the first part, the point set is getting split into smaller pieces that contributes to a line. This is achieved by fitting a line to the whole set of points and calculating the distance for each point to that line. If a point is further away as a certain threshold $t_{d_{max}}$ allows, the point cloud is split in two at that point. Then this procedure is repeated until there are only small pieces of the point cloud in which each point should sit on the corresponding line segment. To each of these pieces, a line segment is fitted. \\
+In the second part of this algorithm the calculated line segments get merged if they are colinear. To measure whether two line segments are colinear, the minimal distance between the endpoints of those lines and the angular difference is calculated. If the threshold $t_{merge}$ for those conditions is not exceeded, the line segments can be merged by simply recomputing the parameters. 
+
+%\begin{algorithm}[h]
+%\caption{Split and Merge}\label{euclid}
+%\begin{algorithmic}[1]
+%\State Initial: set $s_1$ consists of n points. Put $s_1$ in a list
+%\State Fit as line to the next set $s_i$
+%\State Detect point $p_i$ which has maximum distance to the line
+%\State If $p_i$ is less away than a certain threshold, continue (go to 2)
+%\State Otherwise, split $s_i$ at $p_i$ into subset $s_{i1}$ and $s_{i2}$ and put them to the list. Remove $s_i$ and continue (go to 2)
+%\State When all sets $s$ in the list have been checked, merge colinear sets.
+%\end{algorithmic}
+%\end{algorithm}
+
+\begin{algorithm}[h]
+\caption{Split and Merge}\label{Split}
+\begin{algorithmic}[1]
+\caption{Split and Merge}
+\State function $Split(L,P)$:
+    \State $l = FitLine(P)$
+    \State $p_{max}, d_{max} \leftarrow l.findPointMaxDist(P)$
+    \If{$d_{max} > t_{d_{max}}$}
+        \State $P_1, P_2 \leftarrow SplitAt(P,p_{max})$
+        \State $Split(L,P_1)$
+        \State $Split(L,P_2)$
+    \Else
+        \State $L.append(l)$
+    \EndIf
+\State
+\State $L \leftarrow \emptyset$
+\State $Split(L,P)$
+\State $L \leftarrow MergeIfColinear(L, t_{merge})$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection*{RANSAC} \label{sec:ransac}
+The Random Sample Consensus (RANSAC) \cite{Nguyen} is a stochastic algorithm that tries to randomly sample a line from a point cloud. It works by selecting two points uniformly distributed from the set and fitting a line to it. Then the so-called inlier set is calculated. That means that the distance for each point to that line is calculated and the points that are below a threshold $t_{d_{max}}$ are counted as inliers. For this inlier set, the line gets recomputed and the inlier points are getting removed from the point cloud. This can be done until a maximum number of iterations is reached or there are not enough points in the point cloud.
+
+%\begin{algorithm}[h]
+%\caption{RANSAC}\label{euclid}
+%\begin{algorithmic}[1]
+%\State Initial: A set of n points
+%\State Choose a sample of 2 points uniformly at random
+%\State Fit a line through the 2 points
+%\State Compute the distances of all other points to the line
+%\State Construct the inlier set (i.e. the distance to a point is less than a threshold) 
+%\State If there are enough inliers, recompute the line parameters, store the line, remove the inliers from the set
+%\State go to 2 (until max iterations reached or too few points left)
+%\end{algorithmic}
+%\end{algorithm}
+
+\begin{algorithm}[h]
+\caption{RANSAC}\label{ransac}
+\begin{algorithmic}[1]
+\caption{RANSAC}
+\State function $RANSAC(L,P)$:
+\If{$\text{Max Iteration}$ \textbf{or} $\#P < threshold$}
+    \State \Return
+\EndIf
+\State $inlier \leftarrow \emptyset$
+\State $p_1,p_2 \leftarrow X \sim U(0,\#P-1)$
+\State $l = FitLine(p_1,p_2)$
+\For{$p \in P$}
+    \State $dist_p = l.GetDistance(p)$
+    \If{$dist_p < threshold$}
+        \State $inlier.append(p)$
+    \EndIf
+\EndFor
+\If{$\#inlier > threshold$}
+    \State $L.apppend(l)$
+    \State $P.remove(inlier)$
+    \State $RANSAC(P)$
+\Else
+    \State $RANSAC(P)$
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\subsection*{Line Segment Extractor} \label{sec:LSE}
+The Line Segment Extractor is a algorithm which was first published by Xin et al. \cite{Xin} in 2024. The main idea is to use local information to find line segments instead of searching in the whole data. \\
+Therefor a k-nearest neighbor tree is first created. It is a data structure which can return the k (arbitrary number) nearest points for one specific point. For each point a PC is calculated in its neighborhood. Afterwards, a breadth first search (BFS) is started to find line segments. Therefore a random point is chosen as a start point for the BFS. To ensure that a parent node and it's children face the same direction, the absolute value of the scalar product of their principal components has to be bigger than a certain threshold $t_{LSE} \in [0, 1]$.
+The paper suggests 0.85 as a reasonable value. The line parameters will be recomputed for the resulting subset. It is then removed from the tree.
+
+%\begin{algorithm}[h]
+%\caption{Line Segment Extraction}\label{euclid}
+%\begin{algorithmic}[1]
+%\State Initial: A set of n points
+%\State Construct a k-nearest neighbour tree  
+%\State For each point calculate a principal component (PC) from the neighbourhood
+%\State Start a breath first search through the neighbourhood tree and save the points if the scalar product of PC´s is greater than a threshold
+%\State Remove all saved points from the set and calculate a line
+%\State Go to 4 until to few points left or nothing to find.
+%\end{algorithmic}
+%\end{algorithm}
+
+\begin{algorithm}[h]
+\caption{Line Segment Extrator}\label{Split}
+\begin{algorithmic}[1]
+\caption{Line Segment Extrator}
+\State function $LSE(L,P)$:
+\If{$\text{Max Iteration}$ \textbf{or} $\#P < threshold$}
+    \State \Return
+\EndIf
+\State $inlier \leftarrow \emptyset$
+\State $tree = buildKNearestNeighbourTree(P)$
+\For{$Node \in BFS(tree).start (rand)$}
+    \If{$PC_{Node} \cdot PC_{Node.child} > t_{LSE}$}
+        \State $BFS.queue(Node.child)$
+        \State $inlier.append(Node.point)$
+    \EndIf
+\EndFor
+\State $P.remove(inlier)$
+\State $L.append(FitLine(inlier))$
+\State $LSE(L,P)$
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RESULTS
+\section{Results and Discussion} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+To validate the performance of the line segmentation algorithms a series of test cases were generated to analyze specific properties of the algorithms. 
+Therefore a selection of line segments were defined with start and end points for each test case. Afterwards, the line segments were abstracted into point sets, incorporating noise and different resolution. Of these test cases, four are presented here to illustrate the advantages and disadvantages of the methods. To measure the quality of the line segmentation algorithms two metrics were chosen which are explained in the following.
+
+\subsection*{Structural distance} \label{sec:struct}
+One way to measure the similarity between two lines ($l_i$, $j_j$) was presented by Ivanov et al. \cite{Ivanov}. The approach shows two different ways of measure distance between two lines. One is called the structural distance. It calculate the minimal distance sum between the start and end points of both lines. A visualization is shown in figure \ref{fig:structural_distance} and the formula in \eqref{eq:struct}.
+
+\begin{align}
+    d_s(l_i, l_j) &= \min\{\color{uzlblue} \|p_j^1 - p_i^1\|_2 + \|p_j^2 - p_i^2\|_2\color{black}, \nonumber \\
+    &\quad \color{uzllightorange} \|p_j^1 - p_i^2\|_2 + \|p_j^2 - p_i^1\|_2 \color{black} \} \label{eq:struct}
+\end{align}
+
+Using the minimum of either the start-to-start points or start-to-end points distances solves the problem of the unknown orientation of two lines.
+
+\input{tikz/structural_distance} 
+
+\subsection*{Orthogonal distance} \label{sec:ortho}
+The second mentioned method is the orthogonal distance. It calculates the distance to the projected start and end points of a line to another. A visualization is shown in figure \ref{fig:orthogonal_distance} and the formula in \eqref{eq:ortho}. 
+
+\begin{align}
+    d_{\perp} (l_i, l_j) &= \frac{ \color{uzllightorange} {d_a(l_i, l_j)}  \color{black}+ \color{uzlblue} d_a(l_j, l_i) \color{black}}{2} \label{eq:ortho}\\
+    d_a(l_i, l_j) &= \|p_j^1 - \pi_{l_i}(p_j^1)\|_2 + \|p_j^2 - \pi_{l_i}(p_j^2)\|_2
+\end{align}
+
+Here $\pi_{l_i}$ is defined as the projection of a point $p_j$ onto the line $l_i$. As the name suggests, this distance only takes into account the orthogonal displacement but not the tangential as the structural distance does.\\
+Although these two metrics can not give a single score for a line, the interpretation of the meaning of them can be very helpful.
+
+\input{tikz/orthogonal_distance}
+
+\subsection*{Evaluation}
+
+\begin{figure}[b]
+    \centering
+    \includegraphics[width=\linewidth]{images/paper_struct.png}
+    \caption{Structural distance of each algorithm for each test case.}
+    \label{fig:struct_test}
+\end{figure}
+
+The structural distance of each method for the test cases can be seen in figure \ref{fig:struct_test}. The Line Segment Extractor showed the lowest structural distance in all test cases. Further Split and Merge and RANSAC algorithm could not correctly segment the lines in the scenario "Interrupted Line". The Split and Merge algorithm was also not able to succeed the "Parallel Lines" test case, because the previous state requirement for the algorithm was not fulfilled.\\
+The results using the orthogonal distance can be seen in figure \ref{fig:ortho_test}. Here, the Line Segment Extractor has the best precession. While Split and Merge and RANSAC could not segment all line elements in the test case "Interrupted Line", they still managed to create a line that has a low orthogonal distance below 0.2 pixel. 
+
+\begin{figure}[b]
+    \centering
+    \includegraphics[width=\linewidth]{images/paper_ortho.png}
+    \caption{Orthogonal distance of each algorithm for each test case.}
+    \label{fig:ortho_test}
+\end{figure}
+
+Runtime was first measured with Python to show the relative behavior of the algorithms in each test case. The results of the runtime test can be seen in figure \ref{fig:runtime}. Except for the "Range-like" test case, RANSAC was the fastest algorithm. On the other hand the Line Segment Extractor was the slowest, except for the "Parallel Lines" test case, the Split and Merge algorithm took the most time. Both showed a runtime above 130 ms. \\
+Using this tests, it was decided to implement the RANSAC and Line Segment Extractor in C++. The runtime of 1800 data points was between 12 to 30 ms for the RANSAC and around 40 ms for the Line Segment Extractor. This is fast enough to argue that it is feasible to run the algorithms in real-time. 
+
+\begin{figure}[b]
+    \centering
+    \includegraphics[width=\linewidth]{images/paper_time.png}
+    \caption{Runtime of each algorithm for each test case.}
+    \label{fig:runtime}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CONCLUSION
+\section{Conclusion}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The Split and Merge algorithm showed very different results depending on the test case. It tended to long runtime for unconstrained input data. The precision was also not as good as the Line Segment Extractor, and compared to the RANSAC it had no big benefit since it succeeded less test cases.  \\
+Both the RANSAC and the Line Segment Extractor proved to be applicable in real time, but they have a trade off. The RANSAC was a little faster with 15 ms less in average, with the tendency to approximate lines and omit fine details. On the other side the Line Segment Extractor is a bit slower, but can detailed estimate fine line segments in the cloud. The best line segmentation algorithm is therefore depending on the specific use case.\\
+
+\section*{Acknowledgments}
+ The work has been carried out at the STILL GmbH, Hamburg and supervised by Prof. Dr. Georg Schildbach, Institute for Electrical Engineering in Medicine, Universität zu Lübeck.
+
+\section*{Author’s statement}
+\noindent Conflict of interest: Authors state no conflict of interest.
+
+\printbibliography%
+
+\end{document}
