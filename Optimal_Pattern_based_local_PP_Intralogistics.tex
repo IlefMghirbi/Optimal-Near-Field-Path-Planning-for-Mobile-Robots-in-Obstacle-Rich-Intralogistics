@@ -49,21 +49,12 @@
 \begin{document}
 \twocolumn[
 
-\title{Real-Time Line Segmentation for Mobile Robots in 2D Point Clouds}
+\title{Optimal pattern-based near-field path planning for mobile robots, under consideration of obstacles in intralogistics environments.}
 
-\author{Freiling}{Lukas}{a,\ast}{0000-0000-0000-0000}
-\author{Krimm}{Martin}{b}{}
-\author{Haase}{Matthias}{b}{}
-%\author{Schildbach}{Prof. Dr. Georg}{c}{}
+\author{Mhgirbi}{Ilef}{a,\ast}{0000-0000-0000-0000}
+\author{Krueger-Basjmeleh}{Tino}{b}{}
 
-%\affiliation{a}{Student of Medical Engineering Science, Universität zu Lübeck, Lübeck, Germany}
-%\affiliation{b}{Student of Medical Informatics, Universität zu Lübeck, Lübeck, Germany}
-%\affiliation{c}{Student of Biomedical Engineering, Luebeck University of Applied Sciences, Lübeck, Germany}
-%\affiliation{d}{Student of Auditory Technology, Universität zu Lübeck, Lübeck, Germany}
-%\affiliation{e}{Student of Biophysics, Universität zu Lübeck, Lübeck, Germany}
 \affiliation{a}{Student of Robotics and Autonomous Systems, Universität zu Lübeck, Lübeck, Germany}
-%\affiliation{g}{Student of Psychology - Cognitive Systems, Universität zu Lübeck, Lübeck, Germany}
-%\affiliation{h}{Genius Industries, Valley of Innovation, Geniustown, Geniuscountry}
 
 \affiliation{b}{STILL GmbH, Hamburg, Germany}
 %\affiliation{c}{Institute for Electrical Engineering in Medicine, Universität zu Lübeck, Lübeck, Germany}
@@ -74,7 +65,20 @@
 \maketitle
 
 \begin{abstract}
-In this paper, line segmentation algorithms are analyzed regarding their precision and runtime. Therefore three different methods, Split and Merge, RANSAC and Line Segment Extractor algorithm are presented to segment lines from point clouds. Test scenarios were created and evaluated by using the metrics structural and orthogonal distance. It could be shown that the Split and Merge algorithm was not able to correctly segment lines in every scenario. In this cases the runtime was also high, as the general prediction error. The RANSAC and Line Segment Extractor both showed to be suitable for real time application. While the RANSAC proved to be the faster algorithm, the Line Segment Extractor showed to be more precise and fine detailed. This trade-off between both methods leads to the conclusion that the best algorithm depends on the needs of the application.
+Brownfield environments in intralogistics are highly dynamic, complex and tight areas, requiring mobile robots to 
+navigate aside humans while being flexible, efficient and safe. These demands are most challenging for path planning algorithms, adressing
+pickup and drop zones requiring higher accuracy, integrating the sensorially perceived environment, addressing the robot's kinematic constraints,
+and optimizing the path for minimum travel time. This paper presents a combinatorial optimization approach for path planning of autonomous mobile 
+robots in these intralogistics environments. The objective is to generate an efficient but also explainable path that minimizes travel distance 
+and curvature changes while ensuring obstacle avoidance and adherence to kinematic constraints. The proposed methodology formulates path planning 
+as a real-time pattern-based optimization problem, designed for crowded and small intralogistics areas where bulky vehicles frequently change direction.
+The path planning problem is modeled through an objective function that optimizes both travel efficiency and maneuverability, integrating environmental 
+recognition data to guide the optimizer. In order to address this challenge, bio-inspired metaheuristic methods such as Particle Swarm Optimization (PSO), 
+Differential Evolution (DE), and Genetic Algorithms (GA) are employed. These algorithms explore diverse path solutions and progressively refine performance. 
+A comparative study evaluates their computational efficiency and solution quality. The proposed approach is integrated into the Robotics Application
+Construction Kit (RACK) and tested in a controlled environment to assess real-time feasibility. By reducing reliance on extensive commissioning data, 
+this method enhances adaptability across logistics scenarios. The study contributes to combinatorial optimization by improving path feasibility, 
+computational efficiency, and adaptability, making mobile robots more effective in dynamic and complex intralogistics operations.
 \end{abstract}
 ] % end of twocolumn option
 
@@ -232,7 +236,7 @@ One way to measure the similarity between two lines ($l_i$, $j_j$) was presented
 
 Using the minimum of either the start-to-start points or start-to-end points distances solves the problem of the unknown orientation of two lines.
 
-\input{tikz/structural_distance} 
+%\input{tikz/structural_distance} 
 
 \subsection*{Orthogonal distance} \label{sec:ortho}
 The second mentioned method is the orthogonal distance. It calculates the distance to the projected start and end points of a line to another. A visualization is shown in figure \ref{fig:orthogonal_distance} and the formula in \eqref{eq:ortho}. 
@@ -245,36 +249,36 @@ The second mentioned method is the orthogonal distance. It calculates the distan
 Here $\pi_{l_i}$ is defined as the projection of a point $p_j$ onto the line $l_i$. As the name suggests, this distance only takes into account the orthogonal displacement but not the tangential as the structural distance does.\\
 Although these two metrics can not give a single score for a line, the interpretation of the meaning of them can be very helpful.
 
-\input{tikz/orthogonal_distance}
+%\input{tikz/orthogonal_distance}
 
 \subsection*{Evaluation}
 
-\begin{figure}[b]
-    \centering
-    \includegraphics[width=\linewidth]{images/paper_struct.png}
-    \caption{Structural distance of each algorithm for each test case.}
-    \label{fig:struct_test}
-\end{figure}
+%\begin{figure}[b]
+%    \centering
+%    \includegraphics[width=\linewidth]{images/paper_struct.png}
+%    \caption{Structural distance of each algorithm for each test case.}
+%    \label{fig:struct_test}
+%\end{figure}
 
 The structural distance of each method for the test cases can be seen in figure \ref{fig:struct_test}. The Line Segment Extractor showed the lowest structural distance in all test cases. Further Split and Merge and RANSAC algorithm could not correctly segment the lines in the scenario "Interrupted Line". The Split and Merge algorithm was also not able to succeed the "Parallel Lines" test case, because the previous state requirement for the algorithm was not fulfilled.\\
 The results using the orthogonal distance can be seen in figure \ref{fig:ortho_test}. Here, the Line Segment Extractor has the best precession. While Split and Merge and RANSAC could not segment all line elements in the test case "Interrupted Line", they still managed to create a line that has a low orthogonal distance below 0.2 pixel. 
 
-\begin{figure}[b]
-    \centering
-    \includegraphics[width=\linewidth]{images/paper_ortho.png}
-    \caption{Orthogonal distance of each algorithm for each test case.}
-    \label{fig:ortho_test}
-\end{figure}
+%\begin{figure}[b]
+%    \centering
+%    \includegraphics[width=\linewidth]{images/paper_ortho.png}
+%    \caption{Orthogonal distance of each algorithm for each test case.}
+%    \label{fig:ortho_test}
+%\end{figure}
 
 Runtime was first measured with Python to show the relative behavior of the algorithms in each test case. The results of the runtime test can be seen in figure \ref{fig:runtime}. Except for the "Range-like" test case, RANSAC was the fastest algorithm. On the other hand the Line Segment Extractor was the slowest, except for the "Parallel Lines" test case, the Split and Merge algorithm took the most time. Both showed a runtime above 130 ms. \\
 Using this tests, it was decided to implement the RANSAC and Line Segment Extractor in C++. The runtime of 1800 data points was between 12 to 30 ms for the RANSAC and around 40 ms for the Line Segment Extractor. This is fast enough to argue that it is feasible to run the algorithms in real-time. 
 
-\begin{figure}[b]
-    \centering
-    \includegraphics[width=\linewidth]{images/paper_time.png}
-    \caption{Runtime of each algorithm for each test case.}
-    \label{fig:runtime}
-\end{figure}
+%\begin{figure}[b]
+%    \centering
+%    \includegraphics[width=\linewidth]{images/paper_time.png}
+%    \caption{Runtime of each algorithm for each test case.}
+%    \label{fig:runtime}
+%\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONCLUSION
